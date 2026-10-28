@@ -10,12 +10,14 @@ import csv
 from pathlib import Path
 import re
 from typing import Optional
+import statistics
 
 from NaiveBayes import NaiveBayes
 from Partition import ConfusionMatrix, Example, FeatureDomains, FeatureValues, Partition
 
 from typing import List
 from collections import OrderedDict
+
 
 
 def parse_args(argv: Optional[list[str]] = None) -> argparse.Namespace:
@@ -143,13 +145,27 @@ def confusion_matrix(y_true: list[int], y_pred: list[int], K: int) -> ConfusionM
     Return K x K zeros for empty inputs. Raise ValueError for unequal lengths,
     K <= 0, or labels outside range(K). Do not modify either input list.
     """
-    raise NotImplementedError("TODO: implement confusion_matrix")
+    cm = [[0 for _ in range(K)] for _ in range(K)]
+    #    Predicted   C1 C2 ...
+    # Actual       C1
+    #              C2
+    #
+            
+    for i in range(len(y_true)):
+        k_true = int(y_true[i])
+        k_pred = int(y_pred[i])
+        cm[k_true][k_pred] += 1
+
+    return cm 
 
 
 def accuracy(y_true: list[int], y_pred: list[int]) -> float:
     """Return fraction correct; empty or unequal-length inputs raise ValueError."""
-    raise NotImplementedError("TODO: implement accuracy")
-
+    correct = 0
+    for i in range(len(y_true)):
+        if y_true[i] == y_pred[i]:
+            correct += 1
+    return (correct / len(y_true))
 
 def balanced_error_rate(matrix: ConfusionMatrix) -> float:
     """Return the mean class error rate for a square confusion matrix.
@@ -157,8 +173,15 @@ def balanced_error_rate(matrix: ConfusionMatrix) -> float:
     Raise ValueError for an empty/nonsquare matrix, negative counts, or any
     actual class with zero examples (its error rate would be undefined).
     """
-    raise NotImplementedError("TODO: implement balanced_error_rate")
+    error_rates = list()
+    
+    for i in range(len(matrix)):
+        correct = matrix[i][i]
+        errors = sum(matrix[i]) - correct
+        error_rates.append(errors/sum(matrix[i]))
 
+    return statistics.mean(error_rates)   
+        
 
 def print_confusion_matrix(matrix: ConfusionMatrix) -> None:
     """Provided presentation helper; computation belongs in confusion_matrix()."""
@@ -176,7 +199,6 @@ def main(argv: Optional[list[str]] = None) -> None:
     print(f"num train = {train.n}, num classes = {train.K}")
     print(f"num test  = {test.n}, num classes = {test.K}")
     model = NaiveBayes(train)
-
     y_true = [example.label for example in test.data]
     y_pred = model.predict([example.features for example in test.data])
     matrix = confusion_matrix(y_true, y_pred, train.K)

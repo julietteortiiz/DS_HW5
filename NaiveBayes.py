@@ -44,9 +44,6 @@ class NaiveBayes:
                     likelihood = self.log_prob(feature, val, k)
                     self.log_feature[feature][val].append(likelihood)
 
-        print("priors: " + str(self.log_class))
-                                       
-
     def count(self, feature: str, val: str, k: int) -> int:
         """Return the training count of feature=val within class k."""
         count = 0
@@ -72,7 +69,7 @@ class NaiveBayes:
         N_k_j_v = self.count(feature, val, k)
         Nk = self.N_k.get(k)
         fj = len(self.partition.F.get(feature))
-        return math.log(N_k_j_v + 2) - math.log(Nk + fj)
+        return math.log(N_k_j_v + 1) - math.log(Nk + fj)
 
 
     def log_prob_class(self, k: int) -> float:
@@ -88,21 +85,14 @@ class NaiveBayes:
         the training domain raise KeyError; extra feature keys are ignored.
         Do not extend domains using test data.
         """
-        #TODO KEY ERROR
-        #TODO choose smallest class label in tie
-        for feature in self.partition.F:
-            if feature not in x_test:
-                print("KEY ERROR: MISSING FEATURE IN XTEST")
-                exit(1)
-        
         scores = []
         for k in range(self.partition.K):
             score = self.log_class[k]
-            for feature in x_test:
+            for feature in self.partition.F:
                 val = x_test[feature]
                 score += self.log_feature[feature][val][k]
             scores.append(score)
-        
+
         return scores
 
 

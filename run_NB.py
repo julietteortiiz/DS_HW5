@@ -88,39 +88,40 @@ def read_arff(filename: str) -> Partition:
     continuous attributes are outside the scope of this homework.
     """
     arff_file = open(filename, 'r', encoding='utf-8')
+    attributes: List[tuple] = []
+
+    for raw_line in arff_file:
+        line = raw_line.strip()
+        if not line or line.startswith('%'):
+            continue
+        if line.lower() == "@data":
+            break
+        if line.lower().startswith("@attribute"):
+            line = line.replace('{', '').replace('}', '').replace(',', '')
+            tokens = line.split()
+            name = tokens[1]
+            if len(name) >= 2 and name[0] in "'\"" and name[-1] == name[0]:
+                name = name[1:-1]
+            values = tokens[2:]
+            attributes.append((name, values))
+        # @relation and any other header line is skipped
+
+    feature_attrs = attributes[:-1]
+    class_name, class_values = attributes[-1]
+    F: FeatureValues = OrderedDict((name, values) for name, values in feature_attrs)
+    K = len(class_values)
+
     data: List[Example] = []
-    F: FeatureValues = OrderedDict()
+    for raw_line in arff_file:
+        line = raw_line.strip()
+        if not line:
+            continue
+        tokens = line.split(",")
 
-    header = arff_file.readline()
-    line = arff_file.readline().strip()
-    K = 0
-
-    while line != "@data":
-        line = line.replace('{','').replace('}','').replace(',','')
-        tokens = line.split()
-        name = tokens[1][1:-1]
-        features = tokens[2:]
-
-        # label
-        if name != "class":
-            F[name] = features
-        else:
-            K = len(features)
-            first = tokens[2]
-            
-        line = arff_file.readline().strip()
-
-        # read the examples
-    for line in arff_file:
-        tokens = line.strip().split(",")
-        
         X_dict = {}
-        i = 0
-        for key in F:
-            val = tokens[i]
-            X_dict[key] = val
-            i += 1
-        label = tokens[-1]
+        for i, (name, _) in enumerate(feature_attrs):
+            X_dict[name] = tokens[i].strip()
+        label = class_values.index(tokens[-1].strip())
         data.append(Example(X_dict, label))
 
     arff_file.close()
@@ -145,22 +146,31 @@ def confusion_matrix(y_true: list[int], y_pred: list[int], K: int) -> ConfusionM
     Return K x K zeros for empty inputs. Raise ValueError for unequal lengths,
     K <= 0, or labels outside range(K). Do not modify either input list.
     """
+    if K <= 0:
+        raise ValueError("K must be positive")
+    if len(y_true) != len(y_pred):
+        raise ValueError("y_true and y_pred must have the same length")
+
     cm = [[0 for _ in range(K)] for _ in range(K)]
     #    Predicted   C1 C2 ...
     # Actual       C1
     #              C2
     #
-            
+
     for i in range(len(y_true)):
         k_true = int(y_true[i])
         k_pred = int(y_pred[i])
+        if not (0 <= k_true < K) or not (0 <= k_pred < K):
+            raise ValueError("labels must be in range(K)")
         cm[k_true][k_pred] += 1
 
-    return cm 
+    return cm
 
 
 def accuracy(y_true: list[int], y_pred: list[int]) -> float:
     """Return fraction correct; empty or unequal-length inputs raise ValueError."""
+    if len(y_true) == 0 or len(y_true) != len(y_pred):
+        raise ValueError("y_true and y_pred must be non-empty and of equal length")
     correct = 0
     for i in range(len(y_true)):
         if y_true[i] == y_pred[i]:
@@ -173,14 +183,23 @@ def balanced_error_rate(matrix: ConfusionMatrix) -> float:
     Raise ValueError for an empty/nonsquare matrix, negative counts, or any
     actual class with zero examples (its error rate would be undefined).
     """
-    error_rates = list()
-    
-    for i in range(len(matrix)):
-        correct = matrix[i][i]
-        errors = sum(matrix[i]) - correct
-        error_rates.append(errors/sum(matrix[i]))
+    if not matrix or any(len(row) != len(matrix) for row in matrix):
+        raise ValueError("matrix must be square and non-empty")
 
-    return statistics.mean(error_rates)   
+    error_rates = list()
+
+    for i in range(len(matrix)):
+        row = matrix[i]
+        if any(value < 0 for value in row):
+            raise ValueError("counts must be non-negative")
+        total = sum(row)
+        if total == 0:
+            raise ValueError("actual class has zero examples")
+        correct = row[i]
+        errors = total - correct
+        error_rates.append(errors / total)
+
+    return statistics.mean(error_rates)
         
 
 def print_confusion_matrix(matrix: ConfusionMatrix) -> None:

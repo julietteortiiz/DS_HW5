@@ -1,6 +1,5 @@
 """Starter categorical Naive Bayes interfaces for CS260 HW05."""
 from __future__ import annotations
-import numpy as np
 
 import math
 from Partition import FeatureValues, FeatureDomains, Partition
@@ -111,10 +110,16 @@ class NaiveBayes:
     def classify(self, x_test: FeatureValues) -> int:
         """Return the largest-score class; break ties with the smallest label."""
         scores = self.predict_log_scores(x_test)
-        return np.argmax(scores)
+        label = 0
+        max = scores[0]
+        for i in range(len(scores)):
+            if scores[i] == max:
+                continue
+            if scores[i] > max:
+                max = scores[i]
+                label = i
+        return label
         
-
-
     def predict(self, examples: list[FeatureValues]) -> list[int]:
         """Return labels in input order; an empty list returns an empty list."""
         predictions = list()

@@ -35,42 +35,41 @@ def read_csv(filename: str) -> Partition:
     """
     data: List[Example] = []
     F: FeatureValues = OrderedDict()
-    K = 0
-    header = 0
-    Male = 0
-    Female = 0
+    K = 2
+    header_names: List[str] = []
+    sex_index: Optional[int] = None
 
     with open(filename, "r") as f:
         d = csv.reader(f)
 
-        for row in d:
+        for row_num, row in enumerate(d):
 
             #add header feature decs to dict
-            if header == 0:
-                for name in row:
-                    if name != "sex":
-                        F[name] = ""
-                header = 1
-                K = len(F)
+            if row_num == 0:
+                header_names = [name.strip() for name in row]
+                for idx, name in enumerate(header_names):
+                    if name == "sex":
+                        sex_index = idx
+                    else:
+                        F[name] = list()
                 continue
 
-            i = 0
             X_dict = {}
-            for key in F:
-                val = row[i]
-                label = ""
-                if i == 7:
-                    label = val
-                    if label == "Male":
-                        Male = Male + 1
+            label = -1
+            for idx, name in enumerate(header_names):
+                val = row[idx].strip()
+                if idx == sex_index:
+                    if val == "Male":
+                        label = 0
+                    elif val == "Female":
+                        label = 1
                     else:
-                        Female = Female + 1
-                X_dict[key] = val
-                i = i + 1
+                        raise ValueError(f"Invalid sex value: {val}")
+                    continue
+                X_dict[name] = val
+                if val not in F[name]:
+                    F[name].append(val)
             data.append(Example(X_dict, label))
-
-        print("Male " + str(Male))
-        print("Female " + str(Female))
 
     return Partition(data, F, K)
 
@@ -177,6 +176,7 @@ def main(argv: Optional[list[str]] = None) -> None:
     print(f"num train = {train.n}, num classes = {train.K}")
     print(f"num test  = {test.n}, num classes = {test.K}")
     model = NaiveBayes(train)
+
     y_true = [example.label for example in test.data]
     y_pred = model.predict([example.features for example in test.data])
     matrix = confusion_matrix(y_true, y_pred, train.K)

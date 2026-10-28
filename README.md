@@ -1,6 +1,6 @@
 ## CS260 HW05: Naive Bayes
 
-Name:
+Name: Juliette Ortiz
 
 ---
 
@@ -52,9 +52,28 @@ worksheet is separate from the analysis questions below.
 
 1. In this homework we will be considering sex as a protected attribute, and seeing if we can predict sex from the remaining attributes. First, compute the fractions of males and females in the *training* data.
 
+Male 19633/28998  -> 68%
+Female 9365/28998  -> 32%
+
 2. If an algorithm to predict sex independently flipped a fair coin for every *test* example, what expected confusion matrix and expected accuracy would result? Use expectations rather than a single random simulation.
 
+Should be write about 50% of the time, random guessing. 
+Assuming Male is 0 and Female is 1
+
+TN -> 9816.5 examples
+FN -> 9816.5 examples
+TP -> 4682.5 examples
+FP -> 4682.5 examples
+
+
 3. What if an algorithm always predicted the majority class from the *training* data? What confusion matrix and accuracy would it obtain on the test data?
+
+Assuming Male is 0 and Female is 1
+
+TN -> 19633
+FN -> 0
+TP -> 0
+FP -> 9365
 
 #### Part 4
 
@@ -85,4 +104,3 @@ assignments in the future)
   being very easy)
 
 3. Describe the biggest challenge you faced on this homework:
-# DS_HW5
